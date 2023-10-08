@@ -1,8 +1,8 @@
 {
-  "name": "ivalid",
-  "version": "1.4.0",
+  "name": "idata",
+  "version": "1.0.0",
   "type": "module",
-  "description": "watch object",
+  "description": "",
   "main": "./src/index.js",
   "scripts": {
     "clean": "rimraf dist",

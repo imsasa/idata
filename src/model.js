@@ -42,7 +42,7 @@ function init($fields, $data = {}, ths) {
     ths.fields = fields;
 }
 
-function $validate(validateAll) {
+function $validate() {
     let ths    = this,
         fields = Object.values(ths.fields),
         varr   = [];
@@ -52,19 +52,18 @@ function $validate(validateAll) {
             varr.push(v);
         }
     }
-    return Promise.all(varr).then((ret) => ths.isValid);
+    return Promise.all(varr).then(() => ths.isValid);
 }
 
 /**
  *
- * @param {string} [name]
+ * @param {String||Object} [name]
  * @param fields
- * @param opts
- * @return {M}
+ * @return {Model}
  */
-export default function defineModel(name, fields, opts = {}) {
+export default function defineModel(name, fields) {
     if (typeof name === 'object') {
-        opts   = fields;
+        // let opts   = fields;
         fields = name;
         name   = undefined;
     }

@@ -31,7 +31,7 @@ describe("数据验证", function () {
     it("验证数据的初始值（初始值给定错误）", function () {
         let foo = new F(2);
         return foo.validate().then(
-            (ret) => {
+            () => {
                 assert.equal(false, foo.isValid);
             }
         );
@@ -48,7 +48,7 @@ describe("数据验证", function () {
         let foo   = new F(3);
         foo.value = 6;
         return foo.validate().then(
-            (ret) => {
+            () => {
                 assert.equal(true, foo.isValid);
             }
         );
@@ -58,7 +58,7 @@ describe("数据验证", function () {
         foo.value = 5;
         foo.value = 3;
         return foo.validate().then(
-            (ret) => {
+            () => {
                 assert.equal(false, foo.isValid);
             }
         );
@@ -69,7 +69,7 @@ describe("数据验证", function () {
         foo.value = 7;
         foo.value = 8;
         return foo.validate().then(
-            (ret) => {
+            () => {
                 assert.equal(true, foo.isValid);
             }
         );
@@ -81,7 +81,7 @@ describe("数据验证", function () {
         foo.value = 7;
         foo.value = 7;
         return foo.validate().then(
-            (ret) => {
+            () => {
                 assert.equal(true, foo.isValid);
             }
         );
@@ -158,7 +158,7 @@ describe("数组", function () {
         describe("使用默认值", function () {
             let foo = new F();
             it("数据是否正确", function () {
-                foo.validate().then((isValid) => {
+                foo.validate().then(() => {
                     assert.equal(true, foo.isValid);
                 })
             });
@@ -173,7 +173,7 @@ describe("数组", function () {
                 assert.equal(undefined, foo.isValid);
             });
             it("数据是否正确", function () {
-                return foo.validate().then((isValid) => {
+                return foo.validate().then(() => {
                     assert.equal(false, foo.isValid);
                 })
             });
@@ -214,7 +214,7 @@ describe("异步验证", function () {
     let foo = new F([1, 2]);
     it("异步验证", function () {
         return foo.validate().then(
-            (ret) => {
+            () => {
                 assert.equal(false, foo.isValid);
             }
         );
