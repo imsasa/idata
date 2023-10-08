@@ -4,7 +4,7 @@
 https://imsasa.github.io/iaop/
 
 ## 怎么用
-0. 安装  `npm install idata`
+0. 安装  `npm install iob`
 1. 定义一个model
     ```javascript
       let M = modelDefine(
