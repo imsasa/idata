@@ -1,6 +1,7 @@
 # idata
 > 或许能帮到你
-
+## api
+https://imsasa.github.io/iaop/
 
 ## 怎么用
 0. 安装  `npm install idata`
