@@ -25,14 +25,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/imsasa/idata.git"
+    "url": "git+https://github.com/imsasa/iobj.git"
   },
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/imsasa/idata/issues"
+    "url": "https://github.com/imsasa/iobj/issues"
   },
-  "homepage": "https://github.com/imsasa/idata#readme",
+  "homepage": "https://github.com/imsasa/iobj#readme",
   "devDependencies": {
     "@babel/cli": "^7.16.0",
     "@babel/core": "^7.16.5",
