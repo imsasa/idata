@@ -1,6 +1,6 @@
 {
   "name": "idata",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "表单数据管理",
   "main": "./src/index.js",
