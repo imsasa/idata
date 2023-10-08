@@ -62,7 +62,7 @@ export default function defineField(name, clsOpt = {}) {
         name         = name;
         isField      = true;
         validate     = validate;
-        defaultValue = defaultValue || value;
+        defaultValue = defaultValue === undefined ? value : defaultValue;
         validator    = validator;
         parser       = parser;
     }

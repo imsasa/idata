@@ -9,12 +9,12 @@ function init($fields, $data = {}, ths) {
     const vobj                     = ths.value;
     let fieldModifiedChangeHandler = (val, f) => {
         let isModified = ths.isModified;
+        modified[f.name] = val;
         if (val === false && isModified) {
             ths.isModified = Object.values(modified).some((v) => v === true);
         } else if (isModified === false) {
             ths.isModified = true;
         }
-        modified[f.name] = val;
     };
     let fieldValidChangeHandler    = (val, f) => {
         let isValid        = ths.isValid;
@@ -82,6 +82,8 @@ export class Model {
         this.validation = {};
         this.modified   = {};
         this.value      = {};
+        this.isModified  = false;
+        this.isValid    = undefined;
         if (!$fields) {
             $fields = defineFields(data);
             data    = {};

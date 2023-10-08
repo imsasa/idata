@@ -1,10 +1,10 @@
 # iobj
 > 或许能帮到你
 ## api
-https://imsasa.github.io/iaop/
+https://imsasa.github.io/iobj/
 
 ## 怎么用
-0. 安装  `npm install iob`
+0. 安装  `npm install iobj`
 1. 定义一个model
     ```javascript
       let M = modelDefine(

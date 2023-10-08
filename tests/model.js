@@ -1,7 +1,7 @@
 import defineModel from "../src/model.js";
 import Vue         from "vue";
 import assert      from "assert";
-
+import {Model} from "../src/model.js";
 describe("验证isValid", function () {
     it("默认值", function () {
         let M   = defineModel(
@@ -158,6 +158,28 @@ describe("配合vue使用", function () {
         });
         vobj["value"].fname = 'saaa';
         assert.equal(foo.value.fname, "saaa");
+    });
+
+    it("修改值05", function () {
+        let form        = new Model({
+            uin        : "",
+            accountType: "1",
+            channel    : ''
+        });
+        form.value.channel=2;
+        let isModified=form.isModified;
+        assert.equal(isModified, true);
+    });
+    it("修改值06", function () {
+        let form        = new Model({
+            uin        : "",
+            accountType: "1",
+            channel    : ''
+        });
+        form.value.channel=2;
+        form.value.channel='';
+        let isModified=form.isModified;
+        assert.equal(isModified, false);
     });
     it("校验01", function () {
         let foo  = new M();
