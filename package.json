@@ -2,7 +2,7 @@
   "name": "idata",
   "version": "1.0.0",
   "type": "module",
-  "description": "> 或许能帮到你",
+  "description": "表单数据管理",
   "main": "./src/index.js",
   "scripts": {
     "clean": "rimraf dist",
@@ -48,12 +48,7 @@
     "nyc": "^15.1.0",
     "vue": "^2.6.11",
     "webpack": "^5.65.0",
-    "webpack-cli": "^4.9.1"
-  },
-  "directories": {
-    "test": "tests"
-  },
-  "dependencies": {
+    "webpack-cli": "^4.9.1",
     "acorn": "^8.7.0",
     "acorn-import-assertions": "^1.8.0",
     "aggregate-error": "^3.1.0",
@@ -367,5 +362,8 @@
     "yargs-parser": "^20.2.9",
     "yargs-unparser": "^2.0.0",
     "yocto-queue": "^0.1.0"
+  },
+  "directories": {
+    "test": "tests"
   }
 }
