@@ -1,170 +1,91 @@
-import {throttle} from "../assets/throttle.js";
+import arrayProxy from "./field/array-proxy.js";
+import isDiff     from "./field/is-diff.js";
 
-// import Evt from "../assets/evt.js"
-function isDiff(a1, a2) {
-    if (!Array.isArray(a1)) return a1 !== a2;
-    if ((a1 && !a2) || (!a1 && a2) || a1.length !== a2.length) return true;
-    for (let i = 0, n = a1.length; i < n; i++)
-        if (!a2.includes(a1[i])) return true;
-    return false;
-}
-
-function proxyArray(initVal = [], fn) {
-    let arr              = [...initVal];
-    let myArrayPrototype = Object.create(Array.prototype);
-    [
-        "push", "pop", "shift", "unshift", "splice", "sort", "reverse"
-    ].forEach(method => {
-        let m                    = Array.prototype[method];
-        myArrayPrototype[method] = function () {
-            let pre    = [...this];
-            let result = m.apply(this, arguments);
-            fn(this, pre);
-            return result;
-        };
+function validate() {
+    let val      = this.value;
+    let ths      = this;
+    let vali     = this.validator ? this.validator(val) : true;
+    let isValid  = this.isValid;
+    this.isValid = undefined;
+    return Promise.resolve(vali).then((res) => {
+        ths.isValid = res;
+        isValid !== res && ths["onValidChange"]?.(res, ths);
+        return res;
     });
-    arr.__proto__ = myArrayPrototype;
-    return arr;
 }
 
-function ifDirtyFn(newValue, initValue, preValue) {
-    this.$ref && this.$ref.$emit("fieldValueChg", this.name, newValue, preValue);
-    if (this.isModified !== isDiff(newValue, initValue)) {
-        this.isModified = !this.isModified;
-        this.$ref && this.$ref.$emit("fieldModChg", this.name, this.isModified);
-        //this.$emit('isModifiedChange', this.isModified,this);
+
+export default function defineField(name, clsOpt = {}) {
+    if (typeof clsOpt === "string" || Array.isArray(clsOpt) || (clsOpt instanceof Date)) {
+        clsOpt = {
+            defaultValue: clsOpt
+        };
     }
-    this.$validate();
+    let {
+            defaultValue,
+            value,
+            validator,
+            parser, ...otherOpts
+        } = clsOpt;
+
+    class F {
+        constructor(value, opts = {}) {
+            let ths = this;
+            if (value === undefined) {
+                value = typeof ths.defaultValue === "function" ? ths.defaultValue() : ths.defaultValue;
+            }
+            const initVal = ths.parser ? ths.parser(value) : value;
+            // initVal = ths.formatter(value);
+            if (Array.isArray(initVal)) {
+                value = arrayProxy(initVal, setV);
+            }
+
+            function setV(val) {
+                value          = ths.parser ? ths.parser(val) : val;
+                // value          = ths.formatter ? ths.formatter(val) : val;
+                let isModified = ths.isModified;
+                ths.isModified = isDiff(value, initVal);
+                isModified !== ths.isModified && ths["onModifiedChange"]?.(ths.isModified, ths);
+                return ths.validate();
+            }
+
+            this.isModified = false;
+            Object.defineProperty(this, "value", {set: setV, get: () => value, enumerable: true});
+            // if (opts.validator !== undefined) {
+            //     ths.validator = opts.validator;
+            // }
+            // if (opts.formatter !== undefined) {
+            //     ths.formatter = opts.formatter;
+            // }
+        }
+
+        name         = name;
+        isField      = true;
+        validate     = validate;
+        defaultValue = defaultValue || value;
+        validator    = validator;
+        parser       = parser;
+    }
+
+    Object.defineProperty(F, "name", {value: name})
+    F._name = name;
+    Object.assign(F.prototype, otherOpts);
+    return F;
 }
 
-let computeFn;
-let willComputed = (function () {
-    let set       = new Set();
-    let executeFn = function () {
-        set.forEach(i => {
-            set.delete(i);
-            i()
+export function defineFields(fieldsCfg = {}, flag) {
+    let fields = [];
+    if (flag) {
+        Object.entries(fieldsCfg).forEach(([k, v]) => fields.push(defineField(k, {defaultValue: v})));
+    } else if (Array.isArray(fieldsCfg)) {
+        fieldsCfg.forEach(i => fields.push(defineField(i.name, i)));
+    } else {
+        Object.entries(fieldsCfg).forEach(([k, cfg]) => {
+            if (typeof cfg === 'string' || Array.isArray(cfg)) {
+                cfg = {defaultValue: cfg};
+            }
+            fields.push(defineField(k, cfg));
         });
     }
-    return {
-        add(v) {
-            set.add(v);
-            executeFn();
-        }
-    }
-})();
-
-/**
- *
- * @param initVal
- * @param ctx
- * @constructor
- */
-
-function Destor(initVal, ctx) {
-    let value;
-    let fn = (newVal, preVal) => ifDirtyFn.call(ctx, newVal, initVal, preVal)
-
-    function setVal(newValue, preVal) {
-        if (!isDiff(newValue, preVal)) return;
-        Array.isArray(newValue) && (newValue = proxyArray(newValue, fn));
-        value = newValue;
-        fn(value = newValue, preVal);
-    }
-
-    if (ctx.type === 'compute') {
-        this.get  = () => value;
-        let cfn   = ctx.value;
-        computeFn = () => {
-            let newVal = Reflect.apply(cfn, ctx.$ref, []);
-            setVal(newVal, value);
-        }
-        initVal   = Reflect.apply(cfn, ctx.$ref, []);
-        computeFn = undefined;
-    } else {
-        let computeSet;
-        this.get = () => {
-            if (computeFn) {
-                computeSet || (computeSet = new Set());
-                computeSet.add(computeFn);
-            }
-            return value;
-        }
-        this.set = function (newVal) {
-            setVal(newVal, value);
-            if (!computeSet) return;
-            for (let i of computeSet) {
-                willComputed.add(i);
-            }
-        }
-    }
-    value = (initVal && Array.isArray(initVal)) ? proxyArray(initVal, fn) : initVal;
+    return fields;
 }
-
-/**
- *
- * @param isValid
- * @returns {*}
- * @private
- */
-function FieldPrototype({name, alias, desc, validator, defaultValue, required, type, value}) {
-    this.name         = name || this.constructor.name;
-    this.alias        = alias;
-    this.desc         = desc;
-    this.validator    = validator;
-    this.defaultValue = defaultValue;
-    this.required     = !!required;
-    this.type         = type || '';
-    this.value        = value;
-    return this;
-}
-
-/**
- *
- */
-FieldPrototype.prototype.isField = true;
-const validateHelper               = function (isValid) {
-    let validateMsg = isValid&&isValid.msg;
-    isValid         =  typeof isValid!=='boolean'?isValid.isValid:isValid;
-    if (this.isValid !== isValid) {
-        this.isValid     = isValid;
-        this.validateMsg = validateMsg;
-        this.$ref && this.$ref.$emit("fieldValidChg", this.name, isValid,validateMsg);
-        // this.$emit('$isValidChange', this.isValid, this);
-    }
-    return isValid;
-}
-FieldPrototype.prototype.$validate = function () {
-    let isValid, val = this.value;
-    let validator    = this.validator;
-    if (this.required && val === undefined) {
-        isValid = false
-    } else if (val === this.defaultValue || (Array.isArray(val) && !isDiff(val, this.defaultValue))) {
-        isValid = true;
-    } else if (val === undefined || val === "") {
-        isValid = !this.required;
-    } else {
-        isValid = typeof validator === "function" ? this.validator(val) : (validator && this.validator.test(val));
-    }
-    isValid = (isValid && isValid.then) ? isValid : Promise.resolve(isValid);
-    isValid.then(i => Reflect.apply(validateHelper, this, [i]))
-    return isValid;
-};
-export default function defineField(conf) {
-    function F(value, ref) {
-        if (value === undefined && this.required) {
-            value = this.defaultValue;
-        }
-        this.isValid    = undefined;
-        this.isModified = false;
-        this.$ref       = ref;
-        this.$validate  = throttle(this.$validate, 200, {immediate: false, promise: true});
-        Object.defineProperty(this, "value", new Destor(value, this));
-    }
-
-    F.prototype             = new FieldPrototype(conf);
-    F.prototype.constructor = F;
-    Object.defineProperty(F, "name", {value: conf.name});
-    F.isField = true;
-    return F;
-};

@@ -1,158 +1,111 @@
-import defineField   from "./field.js";
-import Evt           from "../assets/evt.js";
-import {debounce}    from "../assets/throttle.js"
-import {has} from "../assets/object.js"
+import {defineFields} from "./field.js";
 
+// import { ref }    from "vue";
 
-function ckValidationHelper(isValid, validation, ctx) {
-    if(isValid){
-        for (let i in validation) {
-            let tmp=validation[i].isValid;
-            if (!tmp) isValid= tmp;
-            if(isValid===false)break;
+function init($fields, $data = {}, ths) {
+    const fields                   = {};
+    const validation               = ths.validation
+    const modified                 = ths.modified;
+    const vobj                     = ths.value;
+    let fieldModifiedChangeHandler = (val, f) => {
+        let isModified = ths.isModified;
+        if (val === false && isModified) {
+            ths.isModified = Object.values(modified).some((v) => v === true);
+        } else if (isModified === false) {
+            ths.isModified = true;
         }
-    }
-    ctx.ref && (ctx.ref.$validation[ctx.name] = {isValid});
-    ctx.ref && ctx.ref.$emit('fieldValidChg', ctx.name, isValid);
-    ctx.$emit("$isValidChg", isValid);
-    return ctx.$isValid = isValid;
-}
-
-/**
- *
- * @param fieldsCfg
- * @constructor
- */
-function ModelPrototype(fieldsCfg) {
-    let fields = [],computeFields=[];
-    for (let field of fieldsCfg) {
-        if (!field.isField && !field.$isModel) {
-            field = field.$isModel ? defineModel(field) : defineField(field)
-        }
-       field.type==='compute'?computeFields.push(field):fields.push(field);
-    }
-    this.$fields=fields;
-    return this;
-}
-
-/**
- *
- * @param validateAll undefined,false,true
- * @return {Promise<any[]>}
- */
-ModelPrototype.prototype.$validate = function (validateAll) {
-    let ths       = this,
-        fieldData = ths.$fields,
-        varr      = [],
-        fields    = Object.keys(fieldData);
-    for (let fieldName of fields) {
-        let field = fieldData[fieldName];
-        let tmp   = field.$validate();
-        varr.push(tmp);
-    }
-    return Promise.allSettled(varr).then((ret) => ckValidationHelper(true, ths.$validation, this));
-};
-
-ModelPrototype.prototype.$isModel = true;
-
-function fieldValidChgHandler(ctx) {
-    let _ = debounce(
-        function (isValid, validation) {
-            return ckValidationHelper(isValid, validation, ctx);
-        }, 80, {promise: true}
-    );
-    return function (fieldName, isValid,msg) {
-        ctx.$validation[fieldName].isValid = isValid;
-        ctx.$validation[fieldName].msg = msg;
-        if (isValid !== ctx.$isValid) _(isValid, ctx.$validation);
-        // if (isValid === true) {
-        //
-        // } else {
-        //     ctx.$ref && ctx.$ref.$emit("fieldValidChg", ctx.constructor.name, false,ctx.$validation);
-        //     ctx.$emit("$isValidChg", ctx.$isValid = false,ctx.validateMsg);
-        // }
-    }
-}
-
-function fieldModChgHandler(ctx) {
-    let _ = debounce(
-        function (modified, isMod) {
-            isMod = isMod || has(modified, true);
-            if (isMod === ctx.$isModified) return;
-            ctx.$isModified = isMod;
-            ctx.$ref && ctx.$ref.$emit("fieldModChg", ctx.name, ctx.$isModified);
-            // ctx.$emit("modChg", ctx.$isModified);
-            ctx.$emit('$isModifiedChg', ctx.$isModified);
-            return isMod;
-        }, 80, {promise: true, immediate: true}
-    );
-    return function (fieldName, isMod) {
-        ctx.$modified[fieldName] = isMod;
-        if (isMod === ctx.$isModified) return;
-        _(ctx.$modified, isMod);
-    }
-}
-
-/**
- *
- * @param cfg
- * @param watch
- * @return {M}
- * @constructor
- */
-export default function defineModel(cfg,watch) {
-    let fields  = cfg.fields || cfg;
-    /**
-     *
-     * @param data
-     * @param isValid
-     * @private
-     */
-    watch||(watch=cfg.watch);
-    let _       = function (data) {
-        let flag         = data ? Array.isArray(data) : data = {},
-            modified     = {},
-            fields       = this.$fields;
-        this.$validation = {};
-        this.$isModified = false;
-        this.$fields     = {};
-        this.$isValid    = undefined;
-        new Evt(this);
-        for (let idx = 0, len = fields.length; idx < len; idx++) {
-            let field,
-                fieldCls            = fields[idx],
-                fname               = fieldCls.name,
-                initVal             = flag ? data[idx] : data[fname];
-            field                   = new fieldCls(initVal, this);
-            field.idx               = idx;
-            modified[fname]         = false;
-            this.$fields[fname]     = field;
-            this.$validation[fname] = field.$isModel ? field.$validation : {isValid:field.isValid,msg:field.validateMsg};
-            Object.defineProperty(this, fname, {
-                set         : function (value) {
-                    field.$isModel ? Object.assign(field, value) : field.value = value;
-                },
-                get         : () => field.value,
-                enumerable  : true,
-                configurable: true
-            });
-        }
-        this.$modified = modified;
-        this.$on("fieldValidChg", fieldValidChgHandler(this));
-        this.$on("fieldModChg"  , fieldModChgHandler(this)  );
-        this.$on("fieldValueChg", (fname, value,preValue) => {
-            if(watch&&watch[fname]){
-                Reflect.apply(watch[fname],this,[value,preValue]);
-            }
-            // evt.trigger(fname, value);
-        });
-        this.$validate = debounce(this.$validate, 100, {immediate: true, promise: true});
+        modified[f.name] = val;
     };
-    _.prototype = new ModelPrototype(fields);
-    _.$fields   = _.prototype.$fields;
-    cfg.name && Object.defineProperty(_, "name", {value: cfg.name});
-    _.prototype.constructor = _;
+    let fieldValidChangeHandler    = (val, f) => {
+        let isValid        = ths.isValid;
+        validation[f.name] = val;
+        if (val === true && !isValid) {
+            ths.isValid = Object.values(validation).every((v) => v !== true);
+        } else if (isValid === true) {
+            ths.isValid = false;
+        }
+    };
+    for (let Field of $fields) {
+        let val, fieldName, field, get, set;
+        fieldName              = Field.name;
+        validation[fieldName]  = undefined;
+        modified[fieldName]    = false;
+        val                    = $data[fieldName];
+        field                  = new Field(val);
+        get                    = () => field.value;
+        set                    = (val) => field.value = val;
+        field.onModifiedChange = fieldModifiedChangeHandler;
+        field.onValidChange    = fieldValidChangeHandler;
+        Object.defineProperty(vobj, field.name, {get, set, enumerable: true});
+        fields[field.name] = field;
+    }
+    ths.fields = fields;
+}
+
+function $validate(validateAll) {
+    let ths    = this,
+        fields = Object.values(ths.fields),
+        varr   = [];
+    for (let field of fields) {
+        if (field.isValid === undefined) {
+            let v = field.validate();
+            varr.push(v);
+        }
+    }
+    return Promise.all(varr).then((ret) => ths.isValid);
+}
+
+/**
+ *
+ * @param {string} [name]
+ * @param fields
+ * @param opts
+ * @return {M}
+ */
+export default function defineModel(name, fields, opts = {}) {
+    if (typeof name === 'object') {
+        opts   = fields;
+        fields = name;
+        name   = undefined;
+    }
+    class _ extends Model {
+        constructor(obj) {
+            super(obj);
+        }
+        name          = name;
+        static fields = defineFields(fields);
+    }
     return _;
 }
-
-// module.exports = defineModel;
+export class Model {
+    constructor(data = {}) {
+        let $fields     = this.constructor.fields;
+        this.validation = {};
+        this.modified   = {};
+        this.value      = {};
+        if (!$fields) {
+            $fields = defineFields(data);
+            data    = {};
+        }
+        init($fields, data, this);
+    }
+    set(k, v) {
+        this.value[k] = v;
+        return this;
+    }
+    validate      = $validate;
+}
+// export class IForm extends Model {
+//   constructor(data,ajax) {
+//     super(data);
+//     Object.defineProperty(this, "$ajax", {value:ajax,enumerable:true});
+//   }
+//   $submit(url) {
+//     return url?this.$ajax.send(url,this.$data()):this.$ajax.send(this.$data());
+//   }
+// }
+// let testModel = defineModel("testModel", {name: "string", age: "number"});
+// let m         = new testModel();
+// m.name        = 123;
+// let d         = m.$data()
+// console.log(m.name);
