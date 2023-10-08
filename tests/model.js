@@ -25,7 +25,7 @@ describe("验证isValid", function () {
                 }]
         );
         let ins = new M();
-        ins.validate().then(function (ret) {
+        ins.validate().then(function () {
             assert.equal(ins.isValid, true);
         });
         // assert.equal(ins.$isValid, true);
@@ -52,7 +52,7 @@ describe("验证isValid", function () {
     it("给定初始值", function (done) {
         let ins = new M({flist: [1, 2, 3]});
         // assert.equal(ins.$isValid, false);
-        ins.validate().then(function (ret) {
+        ins.validate().then(function () {
             let validation = ins.validation;
             assert.equal(validation.fname, true);
             assert.equal(validation.flist, false);
@@ -64,7 +64,7 @@ describe("验证isValid", function () {
     it("修改字段00", function (done) {
         let ins = new M({flist: [1, 2]});
         ins.value.flist.push(3);
-        ins.validate().then(function (ret) {
+        ins.validate().then(function () {
             assert.equal(ins.fields.flist.isValid, false);
             done();
         });
@@ -72,7 +72,7 @@ describe("验证isValid", function () {
     it("修改字段01", function (done) {
         let ins = new M({flist: [1, 2, 3]});
         ins.value.flist.push(4);
-        ins.validate().then(function (ret) {
+        ins.validate().then(function () {
             // assert.equal(ins.$isValid, true);
             assert.equal(ins.validation.flist, true);
             assert.equal(ins.validation.fname, true);
@@ -164,7 +164,7 @@ describe("配合vue使用", function () {
         let vobj = new Vue({
             data: foo
         });
-        foo.validate().then(function (ret) {
+        foo.validate().then(function () {
             assert.equal(vobj.isValid, false);
         });
     });

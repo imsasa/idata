@@ -29,7 +29,7 @@ export default function defineField(name, clsOpt = {}) {
         } = clsOpt;
 
     class F {
-        constructor(value, opts = {}) {
+        constructor(value) {
             let ths = this;
             if (value === undefined) {
                 value = typeof ths.defaultValue === "function" ? ths.defaultValue() : ths.defaultValue;
